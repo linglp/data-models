@@ -49,6 +49,10 @@ jobs:
       pull-requests: write
       contents: read
     steps:
+      # temporary hack to ensure clean directory before generating new schemas, since the generator doesn't currently delete old files
+      - name: Clear schemas directory
+        run: rm -rf ./schemas && mkdir -p ./schemas
+        
       - uses: actions/checkout@v6
       - name: Generate JSON Schemas
         id: generate
@@ -56,10 +60,6 @@ jobs:
         with:
           data-model-source: ./EL.data.model.csv
           data-model-labels: "class_label"
-
-      # temporary hack to ensure clean directory before generating new schemas, since the generator doesn't currently delete old files
-      - name: Clear schemas directory
-        run: rm -rf ./schemas && mkdir -p ./schemas
 
       - name: Check schemas were generated
         if: steps.generate.outputs.schemas-json == '[]'
