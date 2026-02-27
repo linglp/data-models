@@ -162,7 +162,7 @@ jobs:
               semver = release_tag.lstrip('v')
               for schema in org.get_json_schemas():
                   for version in schema.get_versions():
-                      if version.semantic_version == semver:
+                      if version.semantic_version == semver and schema.name in schema_by_name:
                           url = schema_url(org_name, schema.name, semver)
                           schema_dict = schema_by_name.get(schema.name, {})
                           report += f"<details>\n<summary><strong><a href=\"{url}\">{schema.name}</a></strong></summary>\n\n"
@@ -172,11 +172,11 @@ jobs:
           else:
               # PR triggered: show schema name and properties only
               for schema in org.get_json_schemas():
-                  schema_dict = schema_by_name.get(schema.name, {})
-                  report += f"<details>\n<summary><strong>{schema.name}</strong></summary>\n\n"
-                  report += render_properties(schema_dict)
-                  report += "\n</details>\n\n"
-
+                  if schema.name in schema_by_name:
+                      schema_dict = schema_by_name.get(schema.name, {})
+                      report += f"<details>\n<summary><strong>{schema.name}</strong></summary>\n\n"
+                      report += render_properties(schema_dict)
+                      report += "\n</details>\n\n"
           # Write to file
           with open('schema-report.md', 'w') as f:
               f.write(report)
