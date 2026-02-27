@@ -97,6 +97,7 @@ jobs:
           schema-dir: ${{ steps.generate.outputs.schemas }}
           synapse-auth-token: ${{ secrets.TOKEN }}
           version: ${{ github.event.release.tag_name }}
+          fix-schema-name: true
 
       - name: Format Schema Report
         id: format
