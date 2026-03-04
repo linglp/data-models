@@ -119,12 +119,14 @@ jobs:
           schemas = json.loads(schemas_json)
           schema_by_name = {s.get('title', ''): s for s in schemas}
 
-          # Build a mapping of schema name to its registered URI
+          # Build a mapping of schema name to its registered URL
+          # URIs output is newline-separated schema IDs (e.g. "org-SchemaName-version")
+          SYNAPSE_BASE = "https://repo-prod.prod.sagebase.org/repo/v1"
           uri_by_name = {}
-          for uri in [u.strip() for u in registered_uris_raw.split(',') if u.strip()]:
+          for schema_id in [u.strip() for u in registered_uris_raw.splitlines() if u.strip()]:
               for name in schema_by_name:
-                  if f"{org_name}-{name}" in uri:
-                      uri_by_name[name] = uri
+                  if f"{org_name}-{name}" in schema_id:
+                      uri_by_name[name] = f"{SYNAPSE_BASE}/schema/type/registered/{schema_id}"
                       break
 
           def render_properties(schema_dict):
