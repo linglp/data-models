@@ -233,9 +233,9 @@ jobs:
           project_id = "syn74318331"  # Replace with your project ID
 
           json_schema_uris = r'''${{ steps.register.outputs.uris }}'''
+          org_name = r'''${{ steps.resolve-org.outputs.org-name }}'''
           
-          for schema_uri in json_schema_uris..splitlines():
-              org_name = r'''${{ steps.resolve-org.outputs.org-name }}'''
+          for schema_uri in json_schema_uris.splitlines():
               data_type = schema_uri.removeprefix(f"{org_name}-").split("-")[0]
               template_df = extract_schema_properties_from_web(syn, schema_uri)
               with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
