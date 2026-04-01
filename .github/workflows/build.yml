@@ -29,9 +29,9 @@ on:
       - labeled
     branches:
       - "main"
-    # paths:
-    #   - "modules/**"
-    #   - "EL.data.model.csv"
+    paths:
+      - "modules/**"
+      - "EL.data.model.csv"
 
   release:
     types:
@@ -167,13 +167,13 @@ jobs:
 
               # Fetch the schema columns from Synapse to use as the RecordSet structure
               template_df = extract_schema_properties_from_web(syn, schema_uri)
-              tmp_path = f"/tmp/{data_type}.csv"
-              template_df.to_csv(tmp_path, index=False)
 
               if release_tag:
                   # For versioned releases, include the semver in the folder name so each
                   # release gets its own folder (e.g. "individual_human_template_1.0.0")
                   semver = release_tag.lstrip('v')
+                  tmp_path = f"/tmp/{data_type}_{semver}.csv"
+                  template_df.to_csv(tmp_path, index=False)
                   folder = Folder(name=f"{data_type}_{semver}", parent_id=project_id).store()
                   record_set = RecordSet(
                       name="Template",
@@ -187,6 +187,8 @@ jobs:
               else:
                   # For PR runs, create/overwrite a single unversioned folder
                   folder = Folder(name=f"{data_type}", parent_id=project_id).store()
+                  tmp_path = f"/tmp/{data_type}.csv"
+                  template_df.to_csv(tmp_path, index=False)
                   record_set = RecordSet(
                       name="Template",
                       description=f"Template for {data_type}",
