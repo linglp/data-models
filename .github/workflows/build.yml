@@ -137,12 +137,69 @@ jobs:
           version: ${{ github.event.release.tag_name }}
           fix-schema-name: true
 
+      - name: Create recordsets
+        env:
+          SYNAPSE_AUTH_TOKEN: ${{ secrets.TOKEN }}
+        run: |
+          pip install synapseclient -q
+          python - <<'PYTHON'
+          import os 
+          import tempfile
+          from synapseclient import Synapse
+          from synapseclient.models import Folder, RecordSet
+          from synapseclient.extensions.curator.record_based_metadata_task import extract_schema_properties_from_web
+          
+          syn = Synapse()
+          syn.login()
+          project_id = "syn74318331"  # Replace with your project ID
+
+          # All URIs registered in this run, one per line (e.g. "org-SchemaName" or "org-SchemaName-1.0.0")
+          json_schema_uris = r'''${{ steps.register.outputs.uris }}'''
+          org_name = r'''${{ steps.resolve-org.outputs.org-name }}'''
+          release_tag = r'''${{ github.event.release.tag_name }}'''
+
+          for schema_uri in json_schema_uris.splitlines():
+              schema_uri = schema_uri.strip()
+
+              # Strip the org prefix to get "SchemaName" (PR) or "SchemaName-1.0.0" (release),
+              # then take the first segment to isolate just the schema name.
+              data_type = schema_uri.removeprefix(f"{org_name}-").split("-")[0]
+
+              # Fetch the schema columns from Synapse to use as the RecordSet structure
+              template_df = extract_schema_properties_from_web(syn, schema_uri)
+              with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+                  template_df.to_csv(tmp.name, index=False)
+
+                  if release_tag:
+                      # For versioned releases, include the semver in the folder name so each
+                      # release gets its own folder (e.g. "individual_human_template_1.0.0")
+                      semver = release_tag.lstrip('v')
+                      folder = Folder(name=f"{data_type}_{semver}", parent_id=project_id).store()
+                      record_set = RecordSet(
+                          name="Template",
+                          description=f"Template for {data_type}",
+                          parent_id=folder.id,
+                          path=tmp.name,
+                          upsert_keys=[""],
+                          version_number=semver
+                      ).store(synapse_client=syn)
+                  else:
+                      # For PR runs (no release tag), create/overwrite a single unversioned folder
+                      folder = Folder(name=f"{data_type}", parent_id=project_id).store()
+                      record_set = RecordSet(
+                          name="Template",
+                          description=f"Template for {data_type}",
+                          parent_id=folder.id,
+                          path=tmp.name,
+                          upsert_keys=[""]
+                      ).store(synapse_client=syn)
+          PYTHON
+
       - name: Format Schema Report
         id: format
         env:
           SYNAPSE_AUTH_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          pip install synapseclient -q
           python - <<'PYTHON'
           import json
           import os
@@ -215,42 +272,6 @@ jobs:
           if github_step_summary:
               with open(github_step_summary, 'a') as f:
                   f.write(report)
-          PYTHON
-
-      - name: Create recordsets
-        env:
-          SYNAPSE_AUTH_TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          python - <<'PYTHON'
-          import os 
-          import tempfile
-          from synapseclient import Synapse
-          from synapseclient.models import Folder, RecordSet
-          from synapseclient.extensions.curator.record_based_metadata_task import extract_schema_properties_from_web
-          
-          syn = Synapse()
-          syn.login()
-          project_id = "syn74318331"  # Replace with your project ID
-
-          json_schema_uris = r'''${{ steps.register.outputs.uris }}'''
-          org_name = r'''${{ steps.resolve-org.outputs.org-name }}'''
-          
-          for schema_uri in json_schema_uris.splitlines():
-              data_type = schema_uri.removeprefix(f"{org_name}-").split("-")[0]
-              template_df = extract_schema_properties_from_web(syn, schema_uri)
-              with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-                  template_df.to_csv(tmp.name, index=False)
-
-                  folder = Folder(name=f"{data_type}", parent_id=project_id).store()
-                  
-                  # Create the RecordSet, using an empty upsert_keys for now
-                  record_set = RecordSet(
-                      name="Template",
-                      description=f"Template for {data_type}",
-                      parent_id=folder.id,
-                      path=tmp.name,
-                      upsert_keys=[""]
-                  ).store(synapse_client=syn)
           PYTHON
 
       - name: Comment PR with Schema Summary
