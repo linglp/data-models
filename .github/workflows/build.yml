@@ -167,33 +167,33 @@ jobs:
 
               # Fetch the schema columns from Synapse to use as the RecordSet structure
               template_df = extract_schema_properties_from_web(syn, schema_uri)
-              with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
-                  template_df.to_csv(tmp.name, index=False)
+              tmp_path = f"/tmp/{data_type}.csv"
+              template_df.to_csv(tmp_path, index=False)
 
-                  if release_tag:
-                      # For versioned releases, include the semver in the folder name so each
-                      # release gets its own folder (e.g. "individual_human_template_1.0.0")
-                      semver = release_tag.lstrip('v')
-                      folder = Folder(name=f"{data_type}_{semver}", parent_id=project_id).store()
-                      record_set = RecordSet(
-                          name="Template",
-                          description=f"Template for {data_type}",
-                          parent_id=folder.id,
-                          path=tmp.name,
-                          upsert_keys=[""],
-                          version_label=semver,
-                          force_version=False,
-                      ).store(synapse_client=syn)
-                  else:
-                      # For PR runs (no release tag), create/overwrite a single unversioned folder
-                      folder = Folder(name=f"{data_type}", parent_id=project_id).store()
-                      record_set = RecordSet(
-                          name="Template",
-                          description=f"Template for {data_type}",
-                          parent_id=folder.id,
-                          path=tmp.name,
-                          upsert_keys=[""]
-                      ).store(synapse_client=syn)
+              if release_tag:
+                  # For versioned releases, include the semver in the folder name so each
+                  # release gets its own folder (e.g. "individual_human_template_1.0.0")
+                  semver = release_tag.lstrip('v')
+                  folder = Folder(name=f"{data_type}_{semver}", parent_id=project_id).store()
+                  record_set = RecordSet(
+                      name="Template",
+                      description=f"Template for {data_type}",
+                      parent_id=folder.id,
+                      path=tmp_path,
+                      upsert_keys=[""],
+                      version_label=semver,
+                      force_version=False,
+                  ).store(synapse_client=syn)
+              else:
+                  # For PR runs, create/overwrite a single unversioned folder
+                  folder = Folder(name=f"{data_type}", parent_id=project_id).store()
+                  record_set = RecordSet(
+                      name="Template",
+                      description=f"Template for {data_type}",
+                      parent_id=folder.id,
+                      path=tmp_path,
+                      upsert_keys=[""]
+                  ).store(synapse_client=syn)
           PYTHON
 
       - name: Format Schema Report
