@@ -29,9 +29,9 @@ on:
       - labeled
     branches:
       - "main"
-    # paths:
-    #   - "modules/**"
-    #   - "EL.data.model.csv"
+    paths:
+      - "modules/**"
+      - "EL.data.model.csv"
 
   release:
     types:
@@ -51,11 +51,11 @@ jobs:
       contents: write
     env:
       SCHEMA_OUTPUT_DIR: generated-schemas
+      SYNAPSE_PROJECT_ID: syn74318331
     steps:
       - uses: actions/checkout@v6
         with:
-          # github.head_ref is only set for pull_request events; release events need the tag
-          ref: ${{ github.head_ref || github.ref }}
+          ref: ${{ github.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -151,7 +151,7 @@ jobs:
           
           syn = Synapse()
           syn.login()
-          project_id = "syn74318331"  # Replace with your project ID
+          project_id = os.environ["SYNAPSE_PROJECT_ID"]
 
           # All URIs registered in this run, one per line (e.g. "org-SchemaName" or "org-SchemaName-1.0.0")
           json_schema_uris = r'''${{ steps.register.outputs.uris }}'''
