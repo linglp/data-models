@@ -29,9 +29,9 @@ on:
       - labeled
     branches:
       - "main"
-    paths:
-      - "modules/**"
-      - "EL.data.model.csv"
+    # paths:
+    #   - "modules/**"
+    #   - "EL.data.model.csv"
 
   release:
     types:
