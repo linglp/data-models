@@ -181,7 +181,8 @@ jobs:
                           parent_id=folder.id,
                           path=tmp.name,
                           upsert_keys=[""],
-                          version_number=semver
+                          version_label=semver,
+                          force_version=True,
                       ).store(synapse_client=syn)
                   else:
                       # For PR runs (no release tag), create/overwrite a single unversioned folder
