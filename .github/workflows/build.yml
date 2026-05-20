@@ -204,7 +204,7 @@ jobs:
                       path=tmp_path,
                       upsert_keys=[""]
                   ).store(synapse_client=syn)
-            record_set.bind_schema(json_schema_uri=schema_uri)
+              record_set.bind_schema(json_schema_uri=schema_uri)
           PYTHON
 
       - name: Format Schema Report
