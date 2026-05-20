@@ -32,6 +32,7 @@ on:
     paths:
       - "modules/**"
       - "EL.data.model.csv"
+      - ".github/workflows/build.yml"
 
   release:
     types:
