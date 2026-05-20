@@ -32,6 +32,7 @@ on:
     paths:
       - "modules/**"
       - "EL.data.model.csv"
+      - ".github/workflows/build.yml"
 
   release:
     types:
@@ -140,6 +141,8 @@ jobs:
       - name: Create recordsets and bind schemas
         env:
           SYNAPSE_AUTH_TOKEN: ${{ secrets.TOKEN }}
+          # Comma-separated data types that should NOT have RecordSets created
+          SKIP_RECORDSET_DATATYPES: "StudyFolderTemplate,ComputationalToolsTemplate,FileAnnotationTemplate"
         run: |
           pip install synapseclient -q
           python - <<'PYTHON'
@@ -158,12 +161,17 @@ jobs:
           org_name = r'''${{ steps.resolve-org.outputs.org-name }}'''
           release_tag = r'''${{ github.event.release.tag_name }}'''
 
+          skip_recordset = set(os.environ.get("SKIP_RECORDSET_DATATYPES", "").split(","))
+
           for schema_uri in json_schema_uris.splitlines():
               schema_uri = schema_uri.strip()
 
               # Strip the org prefix to get "SchemaName" (PR) or "SchemaName-1.0.0" (release),
               # then take the first segment to isolate just the schema name.
               data_type = schema_uri.removeprefix(f"{org_name}-").split("-")[0]
+
+              if data_type in skip_recordset:
+                  continue
 
               # Fetch the schema columns from Synapse to use as the RecordSet structure
               template_df = extract_schema_properties_from_web(syn, schema_uri)
@@ -196,7 +204,7 @@ jobs:
                       path=tmp_path,
                       upsert_keys=[""]
                   ).store(synapse_client=syn)
-            record_set.bind_schema(json_schema_uri=schema_uri)
+              record_set.bind_schema(json_schema_uri=schema_uri)
           PYTHON
 
       - name: Format Schema Report
